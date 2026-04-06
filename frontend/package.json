@@ -1,0 +1,26 @@
+{
+  "name": "securesphere-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Privacy-Preserving Data Sharing System Frontend",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.0",
+    "axios": "^1.3.2",
+    "crypto-js": "^4.1.1",
+    "tailwindcss": "^3.2.4",
+    "autoprefixer": "^10.4.13",
+    "postcss": "^8.4.21"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^3.1.0",
+    "vite": "^4.2.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
