@@ -5,7 +5,9 @@
 
 export const ROLES = {
   OWNER: 'owner',
-  VIEWER: 'viewer'
+  DOCTOR: 'doctor',
+  PATIENT: 'patient',
+  ADMIN: 'admin'
 };
 
 /**
@@ -42,21 +44,23 @@ export const isFileOwner = (access, requestingUserId) => {
  */
 export const canViewFile = (access, requestingUserId) => {
   return hasAccess(access, requestingUserId) && 
-         (access.role === ROLES.OWNER || access.role === ROLES.VIEWER);
+         [ROLES.OWNER, ROLES.DOCTOR, ROLES.PATIENT, ROLES.ADMIN].includes(access.role);
 };
 
 /**
  * Check if user can share file (only owner)
  */
 export const canShareFile = (access, requestingUserId) => {
-  return isFileOwner(access, requestingUserId);
+  return hasAccess(access, requestingUserId) &&
+    [ROLES.OWNER, ROLES.DOCTOR, ROLES.ADMIN].includes(access.role);
 };
 
 /**
  * Check if user can delete file (only owner)
  */
 export const canDeleteFile = (access, requestingUserId) => {
-  return isFileOwner(access, requestingUserId);
+  return hasAccess(access, requestingUserId) &&
+    [ROLES.OWNER, ROLES.ADMIN].includes(access.role);
 };
 
 /**

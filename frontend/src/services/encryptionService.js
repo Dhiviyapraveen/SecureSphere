@@ -19,6 +19,34 @@ export const encryptClientData = (data, key = ENCRYPTION_KEY) => {
   }
 };
 
+export const encryptTextContent = (plainText, passphrase) => {
+  try {
+    if (!plainText || !passphrase) {
+      return null;
+    }
+
+    return CryptoJS.AES.encrypt(plainText, passphrase).toString();
+  } catch (error) {
+    console.error('Text encryption failed:', error);
+    return null;
+  }
+};
+
+export const decryptTextContent = (cipherText, passphrase) => {
+  try {
+    if (!cipherText || !passphrase) {
+      return null;
+    }
+
+    const bytes = CryptoJS.AES.decrypt(cipherText, passphrase);
+    const plainText = bytes.toString(CryptoJS.enc.Utf8);
+    return plainText || null;
+  } catch (error) {
+    console.error('Text decryption failed:', error);
+    return null;
+  }
+};
+
 /**
  * Decrypt data using AES
  */
@@ -43,5 +71,7 @@ export const hashData = (data) => {
 export default {
   encryptClientData,
   decryptClientData,
+  encryptTextContent,
+  decryptTextContent,
   hashData
 };

@@ -1,59 +1,52 @@
 import jwt from 'jwt-simple';
 import config from '../config/env.js';
 
-/**
- * JWT Middleware - Verifies JWT tokens in Authorization header
- */
+const TOKEN_LIFETIME_SECONDS = config.JWT_EXPIRATION_SECONDS;
 
 export const authMiddleware = (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
       return res.status(401).json({
         success: false,
         message: 'No token provided. Access denied.'
       });
     }
-    
+
     const decoded = jwt.decode(token, config.JWT_SECRET);
-    
-    // Check token expiration
-    if (decoded.exp && decoded.exp < Date.now() / 1000) {
+
+    if (!decoded.exp || decoded.exp < Math.floor(Date.now() / 1000)) {
       return res.status(401).json({
         success: false,
         message: 'Token has expired. Please login again.'
       });
     }
-    
+
     req.user = decoded;
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: 'Invalid token. Access denied.',
-      error: error.message
+      message: 'Invalid token. Access denied.'
     });
   }
 };
 
-/**
- * Optional Token Middleware - Checks token if provided, but doesn't require it
- */
 export const optionalAuthMiddleware = (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    
-    if (token) {
-      const decoded = jwt.decode(token, config.JWT_SECRET);
-      // Check token expiration
-      if (decoded.exp && decoded.exp < Date.now() / 1000) {
-        req.user = null;
-      } else {
-        req.user = decoded;
-      }
+
+    if (!token) {
+      next();
+      return;
     }
-    
+
+    const decoded = jwt.decode(token, config.JWT_SECRET);
+    if (decoded.exp && decoded.exp >= Math.floor(Date.now() / 1000)) {
+      req.user = decoded;
+    }
+
     next();
   } catch (error) {
     req.user = null;
@@ -61,23 +54,36 @@ export const optionalAuthMiddleware = (req, res, next) => {
   }
 };
 
-/**
- * Generate JWT Token
- */
+export const authorizeRoles = (...allowedRoles) => (req, res, next) => {
+  if (!req.user?.role || !allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'You do not have permission to perform this action.'
+    });
+  }
+
+  next();
+};
+
 export const generateToken = (user) => {
-  const payload = {
-    id: user._id,
-    email: user.email,
-    username: user.username,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days
-  };
-  
-  return jwt.encode(payload, config.JWT_SECRET);
+  const issuedAt = Math.floor(Date.now() / 1000);
+
+  return jwt.encode(
+    {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      iat: issuedAt,
+      exp: issuedAt + TOKEN_LIFETIME_SECONDS
+    },
+    config.JWT_SECRET
+  );
 };
 
 export default {
   authMiddleware,
   optionalAuthMiddleware,
+  authorizeRoles,
   generateToken
 };

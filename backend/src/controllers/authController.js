@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import { comparePassword } from '../services/hashingService.js';
 import { generateToken } from '../middleware/authMiddleware.js';
+import { createAuditEntry } from '../services/auditLogService.js';
 
 /**
  * Auth Controller - Handles user registration, login, and authentication
@@ -12,7 +13,7 @@ import { generateToken } from '../middleware/authMiddleware.js';
  */
 export const register = async (req, res, next) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, role, firstName, lastName, department, patientId } = req.body;
     
     // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -27,13 +28,29 @@ export const register = async (req, res, next) => {
     const user = new User({
       username,
       email,
-      password // Password will be hashed by pre-save hook
+      role,
+      password,
+      profile: {
+        firstName,
+        lastName,
+        department,
+        patientId
+      }
     });
     
     await user.save();
     
     // Generate token
     const token = generateToken(user);
+
+    await createAuditEntry({
+      req,
+      userId: user._id,
+      actorRole: user.role,
+      patientId: user.role === 'patient' ? user._id : null,
+      action: 'login',
+      details: 'Account registered and authenticated'
+    });
     
     res.status(201).json({
       success: true,
@@ -59,6 +76,7 @@ export const login = async (req, res, next) => {
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
+      req.attackDetection?.recordFailedAuth();
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -68,6 +86,7 @@ export const login = async (req, res, next) => {
     // Compare password
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
+      req.attackDetection?.recordFailedAuth();
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -76,6 +95,16 @@ export const login = async (req, res, next) => {
     
     // Generate token
     const token = generateToken(user);
+    req.attackDetection?.recordSuccessfulAuth();
+
+    await createAuditEntry({
+      req,
+      userId: user._id,
+      actorRole: user.role,
+      patientId: user.role === 'patient' ? user._id : null,
+      action: 'login',
+      details: 'User logged in'
+    });
     
     res.status(200).json({
       success: true,
@@ -119,13 +148,15 @@ export const getProfile = async (req, res, next) => {
  */
 export const updateProfile = async (req, res, next) => {
   try {
-    const { firstName, lastName, theme } = req.body;
+    const { firstName, lastName, theme, department, patientId } = req.body;
     
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       {
         'profile.firstName': firstName,
         'profile.lastName': lastName,
+        'profile.department': department,
+        'profile.patientId': patientId,
         'preferences.theme': theme
       },
       { new: true, runValidators: true }

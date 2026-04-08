@@ -50,12 +50,12 @@ const Login = () => {
             🔒
           </div>
           <h1 className="text-3xl font-bold text-white">SecureSphere</h1>
-          <p className="text-slate-400 mt-2">Privacy-Preserving Data Sharing</p>
+          <p className="text-slate-400 mt-2">Telemedicine Secure File Sharing</p>
         </div>
 
         {/* Form Card */}
         <div className="bg-slate-800 rounded-lg shadow-xl p-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Login</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">Clinician and Patient Login</h2>
 
           {error && (
             <div className="mb-4 p-3 bg-red-500 bg-opacity-20 border border-red-500 rounded text-red-200 text-sm">

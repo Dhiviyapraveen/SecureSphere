@@ -1,28 +1,43 @@
-# SecureSphere - Privacy-Preserving Data Sharing System
+# SecureSphere - Privacy-Preserving Telemedicine Platform
 
-A full-stack web application that provides secure file sharing with end-to-end encryption, secure authentication, and role-based access control.
+A full-stack web application providing HIPAA-compliant secure file sharing with end-to-end encryption, secure authentication, role-based access control, and healthcare-specific features for telemedicine.
 
 ## 🔐 Features
 
-### Security
+### Core Security
 - **AES-256-GCM Encryption**: Military-grade encryption for all uploaded files
 - **SHA-256 Hashing**: File integrity verification
 - **JWT Authentication**: Secure token-based authentication
 - **Bcrypt Password Hashing**: Secure password storage
 - **PBKDF2 Key Derivation**: Strong key derivation from passwords
+- **Streaming Encryption**: Memory-efficient encryption for large files (up to 100MB)
+- **Attack Detection**: Real-time detection of brute force, rapid requests, and suspicious patterns
 
 ### File Management
-- **Secure Upload**: Files encrypted before storage
+- **Secure Upload**: Files encrypted before storage with chunked uploads (5MB chunks)
 - **File Sharing**: Share files with specific users with role-based access
 - **Access Control**: Owner and Viewer roles with fine-grained permissions
 - **File Metadata**: Track file history, downloads, and access logs
 - **Download Tracking**: Monitor file access activity
+- **Resumable Uploads**: Resume interrupted uploads without re-uploading
+
+### Healthcare Features ⚕️
+- **HIPAA Compliance Logging**: Comprehensive audit trails for all Protected Health Information (PHI) access
+- **Patient Management**: Create patient profiles with Medical Record Numbers (MRN)
+- **Doctor Management**: Register physician profiles with license numbers and specialties
+- **Telemedicine Dashboards**: Dedicated patient and doctor interfaces
+- **Medical Records**: Store and manage diagnosis, prescriptions, vitals, imaging, and lab results
+- **Consent Management**: Grant/revoke authorization for doctors to access specific record types
+- **Insider Threat Detection**: Real-time analysis of 10+ threat patterns with risk scoring
+- **Access Authorization**: Patient-controlled doctor access with granular permissions (view/edit/download/share)
+- **6-Year Compliance Logging**: Mandatory HIPAA retention of all audit events
 
 ### User Management
 - **User Registration**: Secure registration with validation
-- **User Authentication**: JWT-based authentication
+- **User Authentication**: JWT-based authentication with 7-day expiry
 - **Profile Management**: User profile customization
-- **Access Revocation**: Revoke file access from users
+- **Access Revocation**: Revoke file and medical record access from users
+- **Role-Based Access Control**: PATIENT and DOCTOR role separation
 
 ## 🛠️ Tech Stack
 
@@ -41,6 +56,74 @@ A full-stack web application that provides secure file sharing with end-to-end e
 - **bcryptjs** - Password hashing
 - **Multer** - File upload handling
 - **CORS** - Cross-origin resource sharing
+- **Helmet.js** - Security headers
+- **express-rate-limit** - Rate limiting
+- **express-validator** - Input validation
+
+## ⚕️ Healthcare Features
+
+### HIPAA Compliance
+SecureSphere is designed with HIPAA compliance as a core requirement:
+
+- **Comprehensive Audit Logging**: All access to Protected Health Information (PHI) is logged
+  - Event Types: DATA_ACCESS, MODIFICATION, DELETION, EXPORT, AUTHENTICATION, AUTHORIZATION_CHANGE, SECURITY_INCIDENT, INSIDER_THREAT_DETECTED
+  - 6-Year Retention: Automatic compliance log archival per HIPAA requirements
+  - Searchable Logs: Query by event type, severity, user, patient, date range
+
+- **Encryption at Rest & In Transit**: All medical data encrypted with AES-256-GCM
+- **Access Control**: Patient-controlled authorization of physicians
+- **Consent Management**: Grant/revoke specific consent types (Treatment, Payment, Operations, Marketing, Research, Psychotherapy)
+- **Insider Threat Detection**: Real-time risk scoring and alerting for suspicious access patterns
+
+### Patient Portal
+Patients can:
+- View and manage their medical profile  
+- Authorize doctors with specific permissions (view, edit, download, share)
+- Revoke doctor access immediately
+- Upload and manage medical records
+- Grant and revoke data access consents
+- Review audit logs of who accessed their records and when
+
+### Physician Dashboard
+Doctors can:
+- View assigned patients and medical histories
+- Create and manage medical records (diagnosis, prescriptions, vitals, lab results, imaging)
+- Document clinical findings with encrypted storage
+- Access only records from patients who've authorized them
+- View which records they're authorized to access
+
+### Insider Threat Detection
+Real-time detection of suspicious user behavior:
+- **Excessive Access**: >50 records accessed in 1 hour
+- **Bulk Extraction**: >500MB downloaded in 1 hour  
+- **Abnormal Hours**: Access between 2-5 AM (abnormal pattern)
+- **Geographic Anomaly**: Impossible travel patterns detected
+- **Unauthorized Access**: Accessing records outside specialty/authorization
+- **Rapid Pattern**: >20 records accessed in 5 minutes
+- **Risk Scoring**: Aggregate threat scoring with recommendations
+- **Auto-Actions**: Account restrictions/suspension for high-risk patterns (>80 score)
+
+### Data Models
+
+**Patient**: Medical Record Number (MRN), demographics, authorized doctors, consent forms, access logs
+
+**Doctor**: License number, specialty, NPI, hospital affiliation, patient list, access logs
+
+**Medical Record**: Diagnosis, prescriptions, vitals, lab results, imaging findings, access logs
+
+**Compliance Log**: HIPAA-required audit trail (6-year retention) with event type, severity, actor, subject, action, result
+
+**Consent**: Type, authorized recipient, effective/expiration dates, record type coverage
+
+**Insider Threat Log**: Threat type, risk score, indicators, affected patients, investigation status
+
+## 📖 Documentation
+
+- **[HEALTHCARE_DEPLOYMENT_GUIDE.md](HEALTHCARE_DEPLOYMENT_GUIDE.md)**: HIPAA compliance checklist, insider threat detection configuration, production deployment architecture, monitoring & auditing
+- **[TELEMEDICINE_INTEGRATION_GUIDE.md](TELEMEDICINE_INTEGRATION_GUIDE.md)**: Frontend integration, API endpoints, user workflows, security best practices, testing guide, troubleshooting
+- **[BACKEND_SETUP.md](BACKEND_SETUP.md)**: Backend installation and configuration
+- **[FRONTEND_SETUP.md](FRONTEND_SETUP.md)**: Frontend installation and configuration
+- **[QUICKSTART.md](QUICKSTART.md)**: Quick setup for development
 
 ## 📁 Project Structure
 
@@ -50,43 +133,86 @@ SecureSphere/
 │   ├── src/
 │   │   ├── config/          # Configuration (DB, ENV)
 │   │   ├── controllers/     # Route handlers
+│   │   │   ├── authController.js
+│   │   │   ├── fileController.js
+│   │   │   ├── userController.js
+│   │   │   ├── chunkedUploadController.js
+│   │   │   └── healthcareController.js ⚕️
 │   │   ├── models/          # Mongoose schemas
+│   │   │   ├── User.js
+│   │   │   ├── File.js
+│   │   │   ├── AccessLog.js
+│   │   │   └── HealthcareModels.js ⚕️
+│   │   │       ├── Patient
+│   │   │       ├── Doctor
+│   │   │       ├── MedicalRecord
+│   │   │       ├── ComplianceLog
+│   │   │       ├── Consent
+│   │   │       └── InsiderThreatLog
 │   │   ├── middleware/      # Custom middleware
-│   │   ├── services/        # Business logic (encryption, hashing, access control)
+│   │   │   ├── authMiddleware.js
+│   │   │   ├── errorHandler.js
+│   │   │   ├── uploadMiddleware.js
+│   │   │   ├── validationMiddleware.js
+│   │   │   ├── securityMiddleware.js
+│   │   │   ├── attackDetectionMiddleware.js
+│   │   │   ├── hipaaComplianceMiddleware.js ⚕️
+│   │   │   └── insiderThreatMiddleware.js ⚕️
+│   │   ├── services/        # Business logic
+│   │   │   ├── encryptionService.js
+│   │   │   ├── hashingService.js
+│   │   │   ├── accessControlService.js
+│   │   │   ├── streamingEncryptionService.js
+│   │   │   └── [Embedded in middleware: insider threat detection]
 │   │   ├── routes/          # API routes
+│   │   │   ├── authRoutes.js
+│   │   │   ├── fileRoutes.js
+│   │   │   ├── userRoutes.js
+│   │   │   ├── chunkedUploadRoutes.js
+│   │   │   └── healthcareRoutes.js ⚕️
 │   │   └── server.js        # Server entry point
 │   ├── uploads/             # Encrypted file storage
 │   ├── package.json
 │   ├── .env.example
 │   └── .gitignore
 │
-└── frontend/
-    ├── src/
-    │   ├── components/      # Reusable components
-    │   │   ├── Navbar.jsx
-    │   │   ├── FileCard.jsx
-    │   │   └── UploadForm.jsx
-    │   ├── pages/           # Page components
-    │   │   ├── Home.jsx
-    │   │   ├── Login.jsx
-    │   │   ├── Register.jsx
-    │   │   ├── Dashboard.jsx
-    │   │   ├── Upload.jsx
-    │   │   └── SharedFiles.jsx
-    │   ├── context/         # React Context
-    │   │   └── AuthContext.jsx
-    │   ├── services/        # API and utility services
-    │   │   ├── apiService.js
-    │   │   └── encryptionService.js
-    │   ├── App.jsx
-    │   ├── main.jsx
-    │   └── index.css
-    ├── public/
-    ├── index.html
-    ├── package.json
-    ├── tailwind.config.js
-    ├── vite.config.js
-    └── .gitignore
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Reusable components
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── FileCard.jsx
+│   │   │   └── UploadForm.jsx
+│   │   ├── pages/           # Page components
+│   │   │   ├── Home.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Upload.jsx
+│   │   │   ├── SharedFiles.jsx
+│   │   │   ├── PatientDashboard.jsx ⚕️
+│   │   │   └── DoctorDashboard.jsx ⚕️
+│   │   ├── context/         # React Context
+│   │   │   └── AuthContext.jsx
+│   │   ├── services/        # API and utility services
+│   │   │   ├── apiService.js
+│   │   │   ├── encryptionService.js
+│   │   │   └── chunkedUploadService.js
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   ├── public/
+│   ├── index.html
+│   ├── package.json
+│   ├── tailwind.config.js
+│   ├── vite.config.js
+│   └── .gitignore
+│
+├── HEALTHCARE_DEPLOYMENT_GUIDE.md ⚕️
+├── TELEMEDICINE_INTEGRATION_GUIDE.md ⚕️
+├── BACKEND_SETUP.md
+├── FRONTEND_SETUP.md
+├── QUICKSTART.md
+└── README.md
 ```
 
 ## 🚀 Getting Started

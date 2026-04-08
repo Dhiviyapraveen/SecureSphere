@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
+import { authAPI } from '../services/apiService.js';
 
 /**
  * Authentication Context
@@ -6,54 +7,97 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
  */
 
 export const AuthContext = createContext();
+export const useAuth = () => React.useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(Boolean(localStorage.getItem('token')));
   const [error, setError] = useState(null);
 
-  // Initialize user from localStorage on mount
+  const clearSession = useCallback((nextError = null) => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setToken(null);
+    setUser(null);
+    setError(nextError);
+    setIsLoading(false);
+  }, []);
+
+  // Initialize and validate user session whenever the token changes.
   useEffect(() => {
-    if (token) {
+    if (!token) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    const hydrateSession = async () => {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          if (!cancelled) {
+            setUser(parsedUser);
+          }
         } catch (err) {
           console.error('Failed to parse stored user:', err);
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          setToken(null);
+          if (!cancelled) {
+            clearSession('Your saved session could not be restored. Please login again.');
+          }
+          return;
         }
       }
-    }
-  }, []);
+
+      try {
+        const profileResponse = await authAPI.getProfile(token);
+        if (cancelled) {
+          return;
+        }
+
+        localStorage.setItem('user', JSON.stringify(profileResponse.data));
+        setUser(profileResponse.data);
+        setError(null);
+      } catch (err) {
+        if (!cancelled) {
+          clearSession(err.message || 'Your session has expired. Please login again.');
+        }
+        return;
+      }
+
+      if (!cancelled) {
+        setIsLoading(false);
+      }
+    };
+
+    hydrateSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, clearSession]);
+
+  useEffect(() => {
+    const handleUnauthorized = (event) => {
+      clearSession(event.detail?.message || 'Your session is no longer valid. Please login again.');
+    };
+
+    window.addEventListener('securesphere:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('securesphere:unauthorized', handleUnauthorized);
+    };
+  }, [clearSession]);
 
   // Register user
-  const register = useCallback(async (username, email, password, confirmPassword) => {
+  const register = useCallback(async (payload) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-          confirmPassword
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      const data = await authAPI.register(payload);
 
       // Store user and token
       localStorage.setItem('token', data.data.token);
@@ -61,6 +105,7 @@ export const AuthProvider = ({ children }) => {
 
       setToken(data.data.token);
       setUser(data.data.user);
+      setError(null);
       setIsLoading(false);
 
       return { success: true };
@@ -78,19 +123,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      const data = await authAPI.login(email, password);
 
       // Store user and token
       localStorage.setItem('token', data.data.token);
@@ -98,6 +131,7 @@ export const AuthProvider = ({ children }) => {
 
       setToken(data.data.token);
       setUser(data.data.user);
+      setError(null);
       setIsLoading(false);
 
       return { success: true };
@@ -111,12 +145,8 @@ export const AuthProvider = ({ children }) => {
 
   // Logout user
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
-    setError(null);
-  }, []);
+    clearSession(null);
+  }, [clearSession]);
 
   // Update user profile
   const updateProfile = useCallback(async (profileData) => {

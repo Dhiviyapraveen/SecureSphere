@@ -21,6 +21,12 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       match: /.+\@.+\..+/
     },
+    role: {
+      type: String,
+      enum: ['doctor', 'patient', 'admin'],
+      default: 'patient',
+      required: true
+    },
     password: {
       type: String,
       required: true,
@@ -32,6 +38,14 @@ const userSchema = new mongoose.Schema(
         trim: true
       },
       lastName: {
+        type: String,
+        trim: true
+      },
+      department: {
+        type: String,
+        trim: true
+      },
+      patientId: {
         type: String,
         trim: true
       },
@@ -81,5 +95,9 @@ userSchema.methods.toJSON = function () {
   delete user.password;
   return user;
 };
+
+userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ role: 1 });
 
 export default mongoose.model('User', userSchema);

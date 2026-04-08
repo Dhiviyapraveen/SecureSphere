@@ -10,6 +10,9 @@ import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
 import SharedFiles from './pages/SharedFiles';
 import ShareFile from './pages/ShareFile';
+import PatientDashboard from './pages/PatientDashboard';
+import DoctorDashboard from './pages/DoctorDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Components
 import Navbar from './components/Navbar';
@@ -20,11 +23,23 @@ import './index.css';
 /**
  * Protected Route Component
  */
-const ProtectedRoute = ({ children }) => {
-  const { token } = useContext(AuthContext);
+const ProtectedRoute = ({ children, roles = [] }) => {
+  const { token, user, isLoading } = useContext(AuthContext);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[calc(100vh-72px)] items-center justify-center bg-slate-900 px-4 text-slate-300">
+        Validating secure session...
+      </div>
+    );
+  }
 
   if (!token) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (roles.length > 0 && !roles.includes(user?.role)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -35,7 +50,12 @@ const ProtectedRoute = ({ children }) => {
  */
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <AuthProvider>
         <div className="min-h-screen bg-slate-900">
           <Navbar />
@@ -58,7 +78,7 @@ function App() {
             <Route
               path="/upload"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={['patient', 'doctor']}>
                   <Upload />
                 </ProtectedRoute>
               }
@@ -76,6 +96,30 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SharedFiles />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patient-dashboard"
+              element={
+                <ProtectedRoute roles={['patient']}>
+                  <PatientDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctor-dashboard"
+              element={
+                <ProtectedRoute roles={['doctor']}>
+                  <DoctorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />

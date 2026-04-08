@@ -25,7 +25,7 @@ const fileSchema = new mongoose.Schema(
     hash: {
       type: String,
       required: true,
-      unique: true
+      index: true
     },
     encryptionMethod: {
       type: String,
@@ -36,9 +36,22 @@ const fileSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
     filePath: {
       type: String,
-      required: true
+      default: null
+    },
+    encryptedData: {
+      type: String,
+      default: null
+    },
+    encryptionIv: {
+      type: String,
+      default: null
     },
     isEncrypted: {
       type: Boolean,
@@ -61,8 +74,8 @@ const fileSchema = new mongoose.Schema(
         },
         role: {
           type: String,
-          enum: ['owner', 'viewer'],
-          default: 'viewer'
+          enum: ['owner', 'doctor', 'patient', 'admin'],
+          default: 'patient'
         },
         grantedAt: {
           type: Date,
@@ -78,6 +91,42 @@ const fileSchema = new mongoose.Schema(
         }
       }
     ],
+    patient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    category: {
+      type: String,
+      enum: ['report', 'prescription', 'scan', 'lab-result', 'other'],
+      default: 'other'
+    },
+    recordType: {
+      type: String,
+      enum: ['prescription', 'report', 'scan', 'lab-result', 'diagnosis', 'other'],
+      default: 'report'
+    },
+    disease: {
+      type: String,
+      default: ''
+    },
+    clientEncryptedText: {
+      type: String,
+      default: null
+    },
+    clientEncryptionEnabled: {
+      type: Boolean,
+      default: false
+    },
+    clientEncryptionHint: {
+      type: String,
+      default: ''
+    },
+    uploadMethod: {
+      type: String,
+      enum: ['single', 'chunked'],
+      default: 'single'
+    },
     downloadCount: {
       type: Number,
       default: 0
@@ -100,6 +149,7 @@ const fileSchema = new mongoose.Schema(
 
 // Index for faster queries
 fileSchema.index({ owner: 1, createdAt: -1 });
+fileSchema.index({ patient: 1, createdAt: -1 });
 fileSchema.index({ hash: 1 });
 fileSchema.index({ 'access.userId': 1 });
 

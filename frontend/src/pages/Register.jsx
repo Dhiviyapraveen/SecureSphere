@@ -13,6 +13,11 @@ const Register = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
+    role: 'patient',
+    firstName: '',
+    lastName: '',
+    department: '',
+    patientId: '',
     password: '',
     confirmPassword: ''
   });
@@ -31,7 +36,7 @@ const Register = () => {
     setValidationError('');
 
     // Validation
-    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword || !formData.role) {
       setValidationError('All fields are required');
       return;
     }
@@ -46,17 +51,12 @@ const Register = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setValidationError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setValidationError('Password must be at least 8 characters');
       return;
     }
 
-    const result = await register(
-      formData.username,
-      formData.email,
-      formData.password,
-      formData.confirmPassword
-    );
+    const result = await register(formData);
 
     if (result.success) {
       navigate('/dashboard');
@@ -72,7 +72,7 @@ const Register = () => {
             🔒
           </div>
           <h1 className="text-3xl font-bold text-white">SecureSphere</h1>
-          <p className="text-slate-400 mt-2">Privacy-Preserving Data Sharing</p>
+          <p className="text-slate-400 mt-2">Telemedicine Secure File Sharing</p>
         </div>
 
         {/* Form Card */}
@@ -105,6 +105,19 @@ const Register = () => {
               />
             </div>
 
+            <div>
+              <label className="block text-white font-semibold mb-2">Role</label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-4 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
+              >
+                <option value="patient">Patient</option>
+                <option value="doctor">Doctor</option>
+              </select>
+            </div>
+
             {/* Email */}
             <div>
               <label className="block text-white font-semibold mb-2">Email</label>
@@ -117,6 +130,57 @@ const Register = () => {
                 className="w-full px-4 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
               />
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-white font-semibold mb-2">First Name</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="Asha"
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-white font-semibold mb-2">Last Name</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Raman"
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
+                />
+              </div>
+            </div>
+
+            {formData.role === 'doctor' ? (
+              <div>
+                <label className="block text-white font-semibold mb-2">Department</label>
+                <input
+                  type="text"
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  placeholder="Cardiology"
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-white font-semibold mb-2">Patient Identifier</label>
+                <input
+                  type="text"
+                  name="patientId"
+                  value={formData.patientId}
+                  onChange={handleChange}
+                  placeholder="MRN-10294"
+                  className="w-full px-4 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-blue-500 focus:outline-none transition"
+                />
+              </div>
+            )}
 
             {/* Password */}
             <div>

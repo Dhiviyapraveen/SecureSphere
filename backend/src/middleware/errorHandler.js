@@ -22,7 +22,9 @@ export const errorHandler = (error, req, res, next) => {
   } else if (error.name === 'MongoServerError' && error.code === 11000) {
     statusCode = 409;
     const field = Object.keys(error.keyPattern)[0];
-    message = `${field} already exists`;
+    message = field === 'hash' 
+      ? 'A duplicate legacy hash index blocked this upload. Restart the backend so the index migration can run, then try again.'
+      : `${field} already exists`;
   }
   
   return res.status(statusCode).json({

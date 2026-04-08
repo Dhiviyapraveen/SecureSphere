@@ -7,23 +7,62 @@ import config from './config/env.js';
 import authRoutes from './routes/authRoutes.js';
 import fileRoutes from './routes/fileRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import chunkedUploadRoutes from './routes/chunkedUploadRoutes.js';
+import healthcareRoutes from './routes/healthcareRoutes.js';
+import patientRoutes from './routes/patientRoutes.js';
+import doctorRoutes from './routes/doctorRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import {
+  securityHeaders,
+  enforceHttps,
+  createRateLimiter,
+  dataSanitization,
+  auditLog,
+  requestValidation,
+  createNonceValidator,
+  createSpeedLimiter,
+  requestTimeout
+} from './middleware/securityMiddleware.js';
+import { attackDetectionMiddleware } from './middleware/attackDetectionMiddleware.js';
+import { hipaaComplianceMiddleware, hipaaLogger } from './middleware/hipaaComplianceMiddleware.js';
+import { insiderThreatMiddleware } from './middleware/insiderThreatMiddleware.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const replayProtection = createNonceValidator();
 
 /**
  * Database Connection
  */
 connectDB();
+app.set('trust proxy', config.TRUST_PROXY);
+
+/**
+ * Security Middleware Stack
+ */
+app.use(securityHeaders());
+app.use(enforceHttps);
+app.use(createRateLimiter());
+app.use(createSpeedLimiter());
+app.use(requestTimeout(45000));
+app.use(dataSanitization);
+app.use(attackDetectionMiddleware);
+app.use(auditLog);
+app.use(requestValidation);
+app.use(replayProtection);
 
 /**
  * Middleware
  */
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+}));
+app.use(express.json({ limit: '50mb' })); // Increased for metadata
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 /**
  * Health Check Route
@@ -41,7 +80,21 @@ app.get('/api/health', (req, res) => {
  */
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/files/chunked', chunkedUploadRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/healthcare', healthcareRoutes);
+app.use('/api/patient', patientRoutes);
+app.use('/api/doctor', doctorRoutes);
+app.use('/api/admin', adminRoutes);
+
+/**
+ * Healthcare Security: Ensure graceful shutdown of compliance logs
+ */
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, flushing compliance logs...');
+  await hipaaLogger.gracefulShutdown();
+  process.exit(0);
+});
 
 /**
  * Error Handling

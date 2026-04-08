@@ -4,10 +4,10 @@
  */
 
 export const validateRegister = (req, res, next) => {
-  const { username, email, password, confirmPassword } = req.body;
+  const { username, email, password, confirmPassword, role } = req.body;
   
   // Check required fields
-  if (!username || !email || !password || !confirmPassword) {
+  if (!username || !email || !password || !confirmPassword || !role) {
     return res.status(400).json({
       success: false,
       message: 'All fields are required'
@@ -30,12 +30,19 @@ export const validateRegister = (req, res, next) => {
       message: 'Invalid email format'
     });
   }
-  
-  // Password validation
-  if (password.length < 6) {
+
+  if (!['doctor', 'patient'].includes(role)) {
     return res.status(400).json({
       success: false,
-      message: 'Password must be at least 6 characters long'
+      message: 'Role must be doctor or patient'
+    });
+  }
+  
+  // Password validation
+  if (password.length < 8) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters long'
     });
   }
   
@@ -80,10 +87,10 @@ export const validateShareFile = (req, res, next) => {
     });
   }
   
-  if (!role || !['owner', 'viewer'].includes(role)) {
+  if (!role || !['doctor', 'patient', 'admin'].includes(role)) {
     return res.status(400).json({
       success: false,
-      message: 'Invalid role. Must be "owner" or "viewer"'
+      message: 'Invalid role. Must be "doctor", "patient", or "admin"'
     });
   }
   

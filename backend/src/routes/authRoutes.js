@@ -2,6 +2,7 @@ import express from 'express';
 import * as authController from '../controllers/authController.js';
 import { validateRegister, validateLogin } from '../middleware/validationMiddleware.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { authRateLimiter } from '../middleware/securityMiddleware.js';
 
 const router = express.Router();
 
@@ -10,10 +11,10 @@ const router = express.Router();
  */
 
 // POST /api/auth/register - Register new user
-router.post('/register', validateRegister, authController.register);
+router.post('/register', authRateLimiter, validateRegister, authController.register);
 
 // POST /api/auth/login - Login user
-router.post('/login', validateLogin, authController.login);
+router.post('/login', authRateLimiter, validateLogin, authController.login);
 
 // GET /api/auth/profile - Get user profile (protected)
 router.get('/profile', authMiddleware, authController.getProfile);

@@ -61,12 +61,14 @@ const Navbar = () => {
           >
             Dashboard
           </Link>
-          <Link
-            to="/upload"
-            className="hover:text-blue-400 transition"
-          >
-            Upload
-          </Link>
+          {user?.role !== 'admin' ? (
+            <Link
+              to="/upload"
+              className="hover:text-blue-400 transition"
+            >
+              Upload
+            </Link>
+          ) : null}
           <Link
             to="/shared"
             className="hover:text-blue-400 transition"
@@ -77,7 +79,7 @@ const Navbar = () => {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-sm">{user?.username || user?.email}</span>
+            <span className="text-sm">{user?.username || user?.email} · {user?.role}</span>
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
               {user?.username?.charAt(0).toUpperCase() || '?'}
             </div>

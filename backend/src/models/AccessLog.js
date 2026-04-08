@@ -10,14 +10,44 @@ const accessLogSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
+    actorRole: {
+      type: String,
+      enum: ['doctor', 'patient', 'admin', 'system'],
+      default: null
+    },
     fileId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'File',
-      required: true
+      default: null
+    },
+    targetUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    patientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
     },
     action: {
       type: String,
-      enum: ['upload', 'download', 'share', 'view', 'delete', 'decrypt'],
+      enum: [
+        'upload',
+        'upload_initiated',
+        'chunk_uploaded',
+        'chunked_upload_completed',
+        'download',
+        'share',
+        'view',
+        'delete',
+        'decrypt',
+        'audit_view',
+        'access_revoked',
+        'upload_cancelled',
+        'login',
+        'logout'
+      ],
       required: true
     },
     ipAddress: {
@@ -25,6 +55,14 @@ const accessLogSchema = new mongoose.Schema(
       default: null
     },
     userAgent: {
+      type: String,
+      default: null
+    },
+    route: {
+      type: String,
+      default: null
+    },
+    method: {
       type: String,
       default: null
     },
@@ -49,6 +87,7 @@ const accessLogSchema = new mongoose.Schema(
 // Index for efficient queries
 accessLogSchema.index({ userId: 1, timestamp: -1 });
 accessLogSchema.index({ fileId: 1, timestamp: -1 });
+accessLogSchema.index({ patientId: 1, timestamp: -1 });
 accessLogSchema.index({ action: 1 });
 
 export default mongoose.model('AccessLog', accessLogSchema);

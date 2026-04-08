@@ -1,6 +1,12 @@
 import crypto from 'crypto';
 import config from '../config/env.js';
 
+const DEMO_ALGORITHM = 'aes-256-cbc';
+const DEMO_IV_LENGTH = 16;
+
+const getDemoKey = (secret = config.ENCRYPTION_KEY || 'securesphere-demo-key') =>
+  crypto.createHash('sha256').update(secret).digest();
+
 /**
  * Encryption Service - AES-256-GCM encryption
  * Provides secure file encryption and decryption
@@ -138,9 +144,43 @@ export const decryptFile = (encryptedBuffer, password = config.ENCRYPTION_KEY) =
   }
 };
 
+export const encryptTextForStorage = (plainText, secret = config.ENCRYPTION_KEY) => {
+  try {
+    const iv = crypto.randomBytes(DEMO_IV_LENGTH);
+    const cipher = crypto.createCipheriv(DEMO_ALGORITHM, getDemoKey(secret), iv);
+    let encryptedData = cipher.update(plainText, 'utf8', 'hex');
+    encryptedData += cipher.final('hex');
+
+    return {
+      encryptedData,
+      iv: iv.toString('hex')
+    };
+  } catch (error) {
+    throw new Error(`Text encryption failed: ${error.message}`);
+  }
+};
+
+export const decryptTextFromStorage = (encryptedData, ivHex, secret = config.ENCRYPTION_KEY) => {
+  try {
+    const decipher = crypto.createDecipheriv(
+      DEMO_ALGORITHM,
+      getDemoKey(secret),
+      Buffer.from(ivHex, 'hex')
+    );
+
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (error) {
+    throw new Error(`Text decryption failed: ${error.message}`);
+  }
+};
+
 export default {
   encryptData,
   decryptData,
   encryptFile,
-  decryptFile
+  decryptFile,
+  encryptTextForStorage,
+  decryptTextFromStorage
 };

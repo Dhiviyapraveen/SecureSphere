@@ -1,6 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import config from '../config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +12,7 @@ const __dirname = path.dirname(__filename);
  */
 
 const uploadDir = path.join(__dirname, '../../uploads');
+const MAX_FILE_SIZE = config.MAX_MEDICAL_FILE_SIZE_MB * 1024 * 1024;
 
 // Configure storage
 const storage = multer.diskStorage({
@@ -42,9 +44,10 @@ const fileFilter = (req, file, cb) => {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'application/zip',
     'application/x-zip-compressed',
-    'video/mp4',
-    'video/mpeg',
-    'audio/mpeg'
+    'application/dicom',
+    'application/dicom+json',
+    'image/tiff',
+    'video/mp4'
   ];
   
   if (allowedMimes.includes(file.mimetype)) {
@@ -59,7 +62,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB max file size
+    fileSize: MAX_FILE_SIZE
   }
 });
 
@@ -81,7 +84,7 @@ export const handleUploadError = (err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        message: 'File too large. Maximum size is 100MB.'
+        message: `File too large. Maximum size is ${config.MAX_MEDICAL_FILE_SIZE_MB}MB.`
       });
     }
     return res.status(400).json({
